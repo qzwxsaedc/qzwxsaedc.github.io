@@ -1,0 +1,12 @@
+# 博客标签分类
+diary:   &diary  日记
+cpp:     &cpp    C/C++
+csharp:  &csharp C#
+java:    &java   Java
+python:  &python Python
+lua:     &lua    Lua
+shell:   &sh     Shell
+linux:   &linux  Linux
+windows: &win32  Windows
+winapi:  &winapi Windows API
+mirai:   &mirai  Mirai
