@@ -68,9 +68,9 @@ on:
 {%endhighlight%}
 
 其二，这里其实并没有将构建后的内容提交到仓库里面。所以需要一个提交的操作。下文细说。
-其三，这个配置文件其实是有问题的。我遇到的问题有两个，第一个是提示Gemfile.lock文件无权访问，第二个是在后续的提交操作中提示没有对应的目录(这个是我调试的时候莫名其妙出现的问题，不知道是怎么触发的)。第一个问题将`chmod 777 /srv/jekyll`改成`chmod -R 777 srv.jekyll/`可解。
+其三，这个配置文件其实是有问题的。我遇到的问题有两个，第一个是提示Gemfile.lock文件无权访问，第二个是在后续的提交操作中提示没有对应的目录(这个是我调试的时候莫名其妙出现的问题，不知道是怎么触发的)。第一个问题将`chmod 777 /srv/jekyll`改成`chmod -R 777 srv/jekyll/`可解。
 
-**<p sytle="font-size:150%">但是!</p>**这里可以不用这么复杂。
+**但是!**这里可以不用这么复杂。
 
 首先我们来稍微复习一下GitHub Action的特点。GitHub Action最大的特点就是可以用别人写的脚本，所以我们理论上能找到别人写好的构建脚本。实际上我确实找到了一个，还解决了另外一个问题：提交。这个脚本的地址是[https://github.com/marketplace/actions/jekyll-actions](https://github.com/marketplace/actions/jekyll-actions)。所以我们的jobs可以这么写了:
 {%highlight yaml%}
