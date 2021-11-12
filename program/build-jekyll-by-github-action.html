@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>利用GitHub Action将Jekyll部署在GitHub Pages上 - qzwxsaedc的个人博客</title>
+    <meta name="author"  content="qzwxsaedc">
+    <meta name="description" content="利用GitHub Action将Jekyll部署在GitHub Pages上">
+    <meta name="keywords"  content="Github Action, Github Pages, Jekyll">
+    <!-- Open Graph -->
+    <meta property="og:title" content="利用GitHub Action将Jekyll部署在GitHub Pages上 - qzwxsaedc的个人博客">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="/program/build-jekyll-by-github-action.html">
+    <meta property="og:description" content="这个人懒得要死，所以冇描述。">
+    <meta property="og:site_name" content="qzwxsaedc的个人博客">
+    <link rel="stylesheet" href="//cdn.staticfile.org/normalize/6.0.0/normalize.min.css">
+    <link rel="stylesheet" href="//at.alicdn.com/t/font_roc50gemkxpw4s4i.css">
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/prism.css">
+    <link rel="stylesheet" href="/assets/css/share.min.css">
+    <link rel="stylesheet" href="/assets/css/app.min.css">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
+	
+	<!--
+Author: Ray-Eldath
+refer to:
+ - http://docs.mathjax.org/en/latest/options/index.html
+-->
+
+	<script type="text/javascript" async src="https://cdn.bootcss.com/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+	
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+		jax: ["input/TeX", "output/HTML-CSS"],
+		tex2jax: {
+			inlineMath: [ ["$", "$"] ],
+			displayMath: [ ["$$", "$$"] ],
+			skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+		},
+		"HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+      });
+    </script>
+
+	
+    <!--
+Author: Ray-Eldath
+-->
+<style>
+    .markdown-body .anchor{
+        float: left;
+        margin-top: -8px;
+        margin-left: -20px;
+        padding-right: 4px;
+        line-height: 1;
+        opacity: 0;
+    }
+    
+    .markdown-body .anchor .anchor-icon{
+        font-size: 15px
+    }
+</style>
+<script>
+    $(document).ready(function() {
+        let nodes = document.querySelector(".markdown-body").querySelectorAll("h1,h2,h3")
+        for(let node of nodes) {
+            var anchor = document.createElement("a")
+            var anchorIcon = document.createElement("i")
+            anchorIcon.setAttribute("class", "fa fa-anchor fa-lg anchor-icon")
+            anchorIcon.setAttribute("aria-hidden", true)
+            anchor.setAttribute("class", "anchor")
+            anchor.setAttribute("href", "#" + node.getAttribute("id"))
+            
+            anchor.onmouseover = function() {
+                this.style.opacity = "0.4"
+            }
+            
+            anchor.onmouseout = function() {
+                this.style.opacity = "0"
+            }
+            
+            anchor.appendChild(anchorIcon)
+            node.appendChild(anchor)
+        }
+    })
+</script>
+</head>
+
+
+<body>
+  <!--[if lt IE 10]>
+<div class="alert-danger" role="alert">你的浏览器实在太太太旧了，放学别走，升级完浏览器再说！<a target="_blank" class="alert-link" href="http://browsehappy.com">立即升级</a></div>
+<![endif]-->
+  <input id="nm-switch" type="hidden" value="true"> <header class="g-header">
+    <div class="g-logo">
+      <a href="/"></a>
+    </div>
+    <i id="menu-toggle" class="iconfont icon-menu"></i>
+    <nav class="g-nav">
+        <ul>
+            
+            <li><a href="/">home</a></li>
+            
+            <li><a href="/tags.html">tags</a></li>
+            
+        </ul>
+    </nav>
+</header>
+
+
+  <header
+    class="g-banner post-header post-pattern-overlappingCircles bgcolor-default post-no-cover"
+    data-theme="default"
+  >
+    <div class="post-wrapper">
+      <div class="post-tags">
+        
+          
+            <a href="/tags.html#Github%20Action" class="post-tag">Github Action</a>
+          
+            <a href="/tags.html#Github%20Pages" class="post-tag">Github Pages</a>
+          
+            <a href="/tags.html#Jekyll" class="post-tag">Jekyll</a>
+          
+        
+      </div>
+      <h1>利用GitHub Action将Jekyll部署在GitHub Pages上</h1>
+      <div class="post-meta">
+        <span class="post-meta-item"><i class="iconfont icon-author"></i>qzwxsaedc</span>
+        <time class="post-meta-item" datetime="21-02-24"><i class="iconfont icon-date"></i>24 Feb 2021</time>
+      </div>
+    </div>
+    
+  </header>
+
+  <div class="post-content visible">
+    
+
+    <article class="markdown-body">
+      <p><em><a href="#start">直接前往正文</a></em><br />
+博客写好了，就该挂在网站上了。最经济实惠的应该就是直接把网页挂在GitHub Pages上了。既然都上GitHub Pages了，不如直接用GitHub Action来实现自动化网站部署。</p>
+
+<p><em>然后GitHub Action我折腾了一下午……</em></p>
+
+<p>先说明一下，如果不需要GitHub Action的话，整个操作就非常简单:</p>
+<ol>
+  <li>用<code class="language-plaintext highlighter-rouge">jekyll build</code>编译网页</li>
+  <li>把<code class="language-plaintext highlighter-rouge">./_site</code>目录下的所有文件和文件夹上传到服务器或 GitHub/Gitee(如果要用GitHub Pages或Gitee Pages的话)。</li>
+</ol>
+
+<p>或者更偷懒一点:
+  直接在服务器上面运行<code class="language-plaintext highlighter-rouge">jekyll serve</code>。这是Jekyll内置的一个调试用服务器。</p>
+
+<p>作为懒人加穷学生，把博客挂在GitHub Pages上面自然是最好的选择，但是手动编译再部署就很烦。正好GitHub Action免费，直接拿GitHub Action自动部署就完事了。</p>
+
+<hr />
+
+<p>Jekyll的安装、网站项目的创建和GitHub Pages的创建就不再赘述，直接进入主题。</p>
+
+<p>GitHub Action的自动化部署有两个思路，一是把项目和网站放在同一个仓库的不同分支里面，二是把项目和网站放在不同的仓库里面。第二种方案其实蛮麻烦的，这个在后面细说。</p>
+
+<p>先稍微讲一下GitHub Action。这玩意儿可玩性蛮高的，而且服务器配置挺高，比国内阿某云某讯云啥的大方多了。GitHub Action是一类CI\CD工具，配置好了可以体验编译打包发布一条龙服务。具体怎么配置就不展开细讲了(其实就是我自己都没完全玩明白)，百度一搜一大堆，或者自己去看GitHub Action的官方文档也行。GitHub Action和其他CI工具比起来更大的一个优点是，GitHub本身就是一个代码共享的一个平台，也就是说，你可以直接用别人写好的东西，而不需要自己过多的去操心。</p>
+
+<hr />
+
+<h2 id="正文从这里开始"><a name="start">正文从这里开始</a></h2>
+
+<h5 id="没错上面都是废话"><s>没错，上面都是废话</s></h5>
+
+<p>首先将网站项目push到GitHub Pages的仓库中。<strong>据说</strong>GitHub Pages只能指定master分支，但据我观察，好像可以选定其他的分支。我选择将项目传到build分支中。接下来就会遇到第一个小坑。</p>
+
+<p><img src="/assets/img/2021-02-24-build-jekyll-by-github-action/9900BCF8F0F30CA4.png" alt="img" />
+<em><center style="font-size:70%">上面是一个标准的GitHub项目的标签栏</center></em></p>
+
+<p><strong>按百度上你能搜到的大部分步骤</strong>，你只需要点上图中的Action，然后创建一个workflow就行了。就像下图这样:<br />
+<img src="/assets/img/2021-02-24-build-jekyll-by-github-action/097CE708D4118C6C.png" alt="img" />
+<em><center style="font-size:70%">如果你的项目没啥问题的话，应该就是一样的</center></em></p>
+
+<p>可以看到，GitHub其实是默认提供了一套CI模板的，这里是第二个坑，接下来会细讲。</p>
+
+<p>点击<code class="language-plaintext highlighter-rouge">Set up this workflow</code>后，GitHub会自动把模板填充上，就像这样: 
+<img src="/assets/img/2021-02-24-build-jekyll-by-github-action/2C982A81BCEA3CA3.png" alt="img" />
+<em><center style="font-size:70%">仔细看这玩意儿到底是创建在哪个分支的</center></em></p>
+
+<p>这里同时存在两个坑。上文所说的第一个坑是：这个文件其实是创建在master分支的。如果你的项目就在master分支的话，其实也没啥问题。但是如果你的项目不在master分支的话，直接创建配置文件的话，GitHub Action就没法正常运行，毕竟master分支现在啥都没有。</p>
+
+<p>正确的操作是：在本地的项目目录中创建<code class="language-plaintext highlighter-rouge">./.github/workflows/WHATEVER_YOU_LIKE.yml</code>，然后在里面写CI的配置文件。
+<img src="/assets/img/2021-02-24-build-jekyll-by-github-action/0BF3EE28D3CA076D.png" alt="img" />
+<em><center style="font-size:70%">目录长这样</center></em></p>
+
+<p>这里就出现了第二个坑：如果你把GitHub自动创建的模板复制进去的话，也没法自动构建。原因有三。
+其一，触发器监听的是master分支，即只有当master分支有push和pr操作时才会触发构建。正确的配置是</p>
+
+<figure class="highlight"><pre><code class="language-yaml" data-lang="yaml"><span class="na">on</span><span class="pi">:</span>
+  <span class="na">push</span><span class="pi">:</span>
+    <span class="na">branches</span><span class="pi">:</span> <span class="pi">[</span> <span class="nv">build</span> <span class="pi">]</span> <span class="c1"># 这里其实可以填写多个监听的分支，也可以不使用这个参数，监听所有push操作。</span>
+                        <span class="c1"># 因为我需要自动构建的分支是build分支，所以这里填写build分支。</span>
+  <span class="na">pull_request</span><span class="pi">:</span>         <span class="c1"># 这个可以不要。</span>
+    <span class="na">branches</span><span class="pi">:</span> <span class="pi">[</span> <span class="nv">build</span> <span class="pi">]</span> <span class="c1"># 同on.push.branches。</span></code></pre></figure>
+
+<p>其二，这里其实并没有将构建后的内容提交到仓库里面。所以需要一个提交的操作。下文细说。
+其三，这个配置文件其实是有问题的。我遇到的问题有两个，第一个是提示Gemfile.lock文件无权访问，第二个是在后续的提交操作中提示没有对应的目录(这个是我调试的时候莫名其妙出现的问题，不知道是怎么触发的)。第一个问题将<code class="language-plaintext highlighter-rouge">chmod 777 /srv/jekyll</code>改成<code class="language-plaintext highlighter-rouge">chmod -R 777 srv/jekyll/</code>可解。</p>
+
+<p><strong>但是!</strong>这里可以不用这么复杂。</p>
+
+<p>首先我们来稍微复习一下GitHub Action的特点。GitHub Action最大的特点就是可以用别人写的脚本，所以我们理论上能找到别人写好的构建脚本。实际上我确实找到了一个，还解决了另外一个问题：提交。这个脚本的地址是<a href="https://github.com/marketplace/actions/jekyll-actions">https://github.com/marketplace/actions/jekyll-actions</a>。所以我们的jobs可以这么写了:</p>
+
+<figure class="highlight"><pre><code class="language-yaml" data-lang="yaml"><span class="na">jobs</span><span class="pi">:</span>
+  <span class="na">build</span><span class="pi">:</span>
+    <span class="na">runs-on</span><span class="pi">:</span> <span class="s">ubuntu-latest</span> <span class="c1"># GitHub Action可以在Linux、MacOS、Windows环境下构建项目。这里使用的Linux环境。</span>
+    <span class="na">steps</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">actions/checkout@v2</span>
+
+    <span class="c1"># Use GitHub Actions' cache to shorten build times and decrease load on servers</span>
+    <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">actions/cache@v2</span>
+      <span class="na">with</span><span class="pi">:</span>
+        <span class="na">path</span><span class="pi">:</span> <span class="s">vendor/bundle</span>
+        <span class="na">key</span><span class="pi">:</span> <span class="s">${{ runner.os }}-gems-${{ hashFiles('**/Gemfile') }}</span>
+        <span class="na">restore-keys</span><span class="pi">:</span> <span class="pi">|</span>
+          <span class="s">${{ runner.os }}-gems-</span>
+
+    <span class="c1"># https://github.com/marketplace/actions/jekyll-actions</span>
+    <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">helaili/jekyll-action@v2</span>
+      <span class="na">with</span><span class="pi">:</span>
+        <span class="na">token</span><span class="pi">:</span> <span class="s">${{ secrets.GITHUB_TOKEN }}</span>
+        <span class="na">target_branch</span><span class="pi">:</span> <span class="s1">'</span><span class="s">master'</span></code></pre></figure>
+
+<p>完整的配置文件:</p>
+
+<figure class="highlight"><pre><code class="language-yaml" data-lang="yaml"><span class="na">name</span><span class="pi">:</span> <span class="s">Jekyll Site CI</span>
+<span class="na">on</span><span class="pi">:</span>
+  <span class="na">push</span><span class="pi">:</span>
+    <span class="na">branches</span><span class="pi">:</span> <span class="pi">[</span> <span class="nv">build</span> <span class="pi">]</span> <span class="c1"># 这里其实可以填写多个监听的分支，也可以不使用这个参数，监听所有push操作。</span>
+                        <span class="c1"># 因为我需要自动构建的分支是build分支，所以这里填写build分支。</span>
+  <span class="na">pull_request</span><span class="pi">:</span>         <span class="c1"># 这个可以不要。</span>
+    <span class="na">branches</span><span class="pi">:</span> <span class="pi">[</span> <span class="nv">build</span> <span class="pi">]</span> <span class="c1"># 同on.push.branches。</span>
+
+<span class="na">jobs</span><span class="pi">:</span>
+  <span class="na">build</span><span class="pi">:</span>
+    <span class="na">runs-on</span><span class="pi">:</span> <span class="s">ubuntu-latest</span> <span class="c1"># GitHub Action可以在Linux、MacOS、Windows环境下构建项目。这里使用的Linux环境。</span>
+    <span class="na">steps</span><span class="pi">:</span>
+    <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">actions/checkout@v2</span>
+
+    <span class="c1"># Use GitHub Actions' cache to shorten build times and decrease load on servers</span>
+    <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">actions/cache@v2</span>
+      <span class="na">with</span><span class="pi">:</span>
+        <span class="na">path</span><span class="pi">:</span> <span class="s">vendor/bundle</span>
+        <span class="na">key</span><span class="pi">:</span> <span class="s">${{ runner.os }}-gems-${{ hashFiles('**/Gemfile') }}</span>
+        <span class="na">restore-keys</span><span class="pi">:</span> <span class="pi">|</span>
+          <span class="s">${{ runner.os }}-gems-</span>
+
+    <span class="c1"># https://github.com/marketplace/actions/jekyll-actions</span>
+    <span class="pi">-</span> <span class="na">uses</span><span class="pi">:</span> <span class="s">helaili/jekyll-action@v2</span>
+      <span class="na">with</span><span class="pi">:</span>
+        <span class="na">token</span><span class="pi">:</span> <span class="s">${{ secrets.GITHUB_TOKEN }}</span>
+        <span class="na">target_branch</span><span class="pi">:</span> <span class="s1">'</span><span class="s">master'</span></code></pre></figure>
+
+<p>push后就会自动构建，稍等一会儿，当看到commit id旁边出现绿勾时就说明任务完成了。</p>
+
+<hr />
+
+<h2 id="还没完全结束">还没完全结束！</h2>
+
+<p>我选择GitHub Pages还有另外一个理由：GitHub Pages可以自定义域名，Gitee Pages就不行。虽然Gitee Pages Pro可以设置，但是那玩意儿个人账户甚至买不了。</p>
+
+<p><img src="/assets/img/2021-02-24-build-jekyll-by-github-action/9900BCF8F0F30CA4.png" alt="img" />
+<em><center style="font-size:70%">没错，还是这张图</center></em>
+步骤很简单。点上图中的Setting，然后往下翻到底，就能看到这个：
+<img src="/assets/img/2021-02-24-build-jekyll-by-github-action/4F7B2413E33E3434.png" alt="img" />
+<em><center style="font-size:70%">翻到底就能看到，一定要翻到底</center></em></p>
+
+<p>我这里已经设置过了，所以url是自定义的域名。默认域名是<code class="language-plaintext highlighter-rouge">&lt;username&gt;.github.io</code>。在Custom domain栏填写你要设置的域名，然后点save，然后网站所在的分支就会创建一个CNAME文件。所以其实可以直接在本地创建一个，然后push上去。然后你就能用自己的域名了。</p>
+
+<p>如果你要用自己的域名，你还需要把CNAME放在项目的根目录，要不然下次提交时会被移除。</p>
+
+    </article>
+
+    
+    <div class="social-share-wrapper">
+      <div class="social-share"></div>
+    </div>
+    
+  </div>
+
+  <section class="author-detail">
+    <section class="post-footer-item author-card">
+      <div class="avatar">
+        <img src="/assets/img/profile.png" alt="">
+      </div>
+      <div class="author-name" rel="author">qzwxsaedc</div>
+      <div class="bio">
+        <p><s>你以为这里有描述，其实并没有</s></p>
+      </div>
+      
+      <ul class="sns-links">
+        
+        <li>
+          <a href="//github.com/Skeleton321" target="_blank">
+                    <i class="iconfont icon-github"></i>
+                </a>
+        </li>
+        
+      </ul>
+      
+    </section>
+    <section class="post-footer-item read-next">
+      
+      <div class="read-next-item">
+        <a href="/others/my-first-blog.html" class="read-next-link"></a>
+        <section>
+          <span>第一篇博客</span>
+          <p>我几年前就有建一个个人博客的计划，但是受限于各种问题(懒，国内域名备案，不知道写啥)就一直没弄。</p>
+        </section>
+        
+     </div>
+      
+
+      
+    </section>
+    
+  </section>
+
+  <footer class="g-footer">
+  <section>qzwxsaedc的个人博客 ©
+  
+  
+  2021
+  </section>
+  <section>Powered by <a href="//jekyllrb.com">Jekyll</a> | <a href="https://github.com/kaeyleo/jekyll-theme-H2O">Theme H2O</a></section>
+</footer>
+
+
+  <script src="/assets/js/social-share.min.js"></script>
+  <script>
+    socialShare('.social-share', {
+      sites: [
+        
+      ],
+      wechatQrcodeTitle: "分享到微信朋友圈",
+      wechatQrcodeHelper: '<p>扫码后点击右上角</p><p>将本文分享至朋友圈</p>'
+    });
+  </script>
+
+  
+
+  <script src="/assets/js/prism.js"></script>
+  <script src="/assets/js/index.min.js"></script>
+</body>
+
+</html>

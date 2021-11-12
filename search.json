@@ -1,0 +1,21 @@
+[
+  
+    {
+      "title"    : "在WSL2-Ubuntu20.04上配置MySQL踩的坑与解决方案",
+      "tags"     : "MySQL-8.0.23 Linux",
+      "url"      : "/program/how-to-install-and-configure-mysql.html"
+    } ,
+  
+    {
+      "title"    : "第一篇博客",
+      "tags"     : "日记",
+      "url"      : "/others/my-first-blog.html"
+    } ,
+  
+    {
+      "title"    : "利用GitHub Action将Jekyll部署在GitHub Pages上",
+      "tags"     : "Github Action Github Pages Jekyll",
+      "url"      : "/program/build-jekyll-by-github-action.html"
+    } 
+  
+]

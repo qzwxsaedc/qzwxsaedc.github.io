@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在WSL2-Ubuntu20.04上配置MySQL踩的坑与解决方案 - qzwxsaedc的个人博客</title>
+    <meta name="author"  content="qzwxsaedc">
+    <meta name="description" content="在WSL2-Ubuntu20.04上配置MySQL踩的坑与解决方案">
+    <meta name="keywords"  content="MySQL-8.0.23, Linux">
+    <!-- Open Graph -->
+    <meta property="og:title" content="在WSL2-Ubuntu20.04上配置MySQL踩的坑与解决方案 - qzwxsaedc的个人博客">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="/program/how-to-install-and-configure-mysql.html">
+    <meta property="og:description" content="这个人懒得要死，所以冇描述。">
+    <meta property="og:site_name" content="qzwxsaedc的个人博客">
+    <link rel="stylesheet" href="//cdn.staticfile.org/normalize/6.0.0/normalize.min.css">
+    <link rel="stylesheet" href="//at.alicdn.com/t/font_roc50gemkxpw4s4i.css">
+    <link rel="stylesheet" href="/assets/css/github-markdown.css">
+    <link rel="stylesheet" href="/assets/css/prism.css">
+    <link rel="stylesheet" href="/assets/css/share.min.css">
+    <link rel="stylesheet" href="/assets/css/app.min.css">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
+	
+	<!--
+Author: Ray-Eldath
+refer to:
+ - http://docs.mathjax.org/en/latest/options/index.html
+-->
+
+	<script type="text/javascript" async src="https://cdn.bootcss.com/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+	
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+		jax: ["input/TeX", "output/HTML-CSS"],
+		tex2jax: {
+			inlineMath: [ ["$", "$"] ],
+			displayMath: [ ["$$", "$$"] ],
+			skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+		},
+		"HTML-CSS": { preferredFont: "TeX", availableFonts: ["STIX","TeX"] }
+      });
+    </script>
+
+	
+    <!--
+Author: Ray-Eldath
+-->
+<style>
+    .markdown-body .anchor{
+        float: left;
+        margin-top: -8px;
+        margin-left: -20px;
+        padding-right: 4px;
+        line-height: 1;
+        opacity: 0;
+    }
+    
+    .markdown-body .anchor .anchor-icon{
+        font-size: 15px
+    }
+</style>
+<script>
+    $(document).ready(function() {
+        let nodes = document.querySelector(".markdown-body").querySelectorAll("h1,h2,h3")
+        for(let node of nodes) {
+            var anchor = document.createElement("a")
+            var anchorIcon = document.createElement("i")
+            anchorIcon.setAttribute("class", "fa fa-anchor fa-lg anchor-icon")
+            anchorIcon.setAttribute("aria-hidden", true)
+            anchor.setAttribute("class", "anchor")
+            anchor.setAttribute("href", "#" + node.getAttribute("id"))
+            
+            anchor.onmouseover = function() {
+                this.style.opacity = "0.4"
+            }
+            
+            anchor.onmouseout = function() {
+                this.style.opacity = "0"
+            }
+            
+            anchor.appendChild(anchorIcon)
+            node.appendChild(anchor)
+        }
+    })
+</script>
+</head>
+
+
+<body>
+  <!--[if lt IE 10]>
+<div class="alert-danger" role="alert">你的浏览器实在太太太旧了，放学别走，升级完浏览器再说！<a target="_blank" class="alert-link" href="http://browsehappy.com">立即升级</a></div>
+<![endif]-->
+  <input id="nm-switch" type="hidden" value="true"> <header class="g-header">
+    <div class="g-logo">
+      <a href="/"></a>
+    </div>
+    <i id="menu-toggle" class="iconfont icon-menu"></i>
+    <nav class="g-nav">
+        <ul>
+            
+            <li><a href="/">home</a></li>
+            
+            <li><a href="/tags.html">tags</a></li>
+            
+        </ul>
+    </nav>
+</header>
+
+
+  <header
+    class="g-banner post-header post-pattern-overlappingCircles bgcolor-default post-no-cover"
+    data-theme="default"
+  >
+    <div class="post-wrapper">
+      <div class="post-tags">
+        
+          
+            <a href="/tags.html#MySQL-8.0.23" class="post-tag">MySQL-8.0.23</a>
+          
+            <a href="/tags.html#Linux" class="post-tag">Linux</a>
+          
+        
+      </div>
+      <h1>在WSL2-Ubuntu20.04上配置MySQL踩的坑与解决方案</h1>
+      <div class="post-meta">
+        <span class="post-meta-item"><i class="iconfont icon-author"></i>qzwxsaedc</span>
+        <time class="post-meta-item" datetime="21-05-02"><i class="iconfont icon-date"></i>02 May 2021</time>
+      </div>
+    </div>
+    
+  </header>
+
+  <div class="post-content visible">
+    
+
+    <article class="markdown-body">
+      <p><em><del>摸了两个月终于写了第三篇文章XD</del></em></p>
+
+<p>这几天写了个项目用到了MySQL，最开始图方便装的windows版。方便是方便，装完了就能直接用。后来想着干脆把这玩意儿丢到wsl2里面，方便调试(主要是要把Django放wsl2里面)。然后……然后tm折腾了一晚上。</p>
+<h2 id="1-安装">1 安装</h2>
+<p>安装很简单，Ubuntu下面<code class="language-plaintext highlighter-rouge">sudo apt install mysql-server-8.0</code>就行了。<br />
+然后这里就有第一个坑……用<code class="language-plaintext highlighter-rouge">sudo apt search ^mysql-server</code>搜索的话你就会看到其实有三个包：
+<img src="/assets/img/2021-05-02-how-to-install-and-configure-mysql/1.png" alt="img" />
+看描述可以看出来，第一个和第二个包内容是相同的，第三个包和前两个包相比少了mysql-client的部分；第二个包和第一个包最大的区别就是<strong>System database setup</strong>这句话。也就是说用<code class="language-plaintext highlighter-rouge">sudo apt install mysql-server-8.0</code>来装的话，会少一些配置过程。<br />
+为什么说有坑呢，你上百度搜linux安装mysql，不敢说80%，至少90%的文章(反正大家互相抄，说99%也没啥问题)都说 <em>安装过程中需要输入密码</em> ，但是实际上8.0没这一步……后面出问题时搞得我一度以为哪儿出问题了。当然这只是个小坑。</p>
+<h2 id="2-配置启动">2 配置&amp;启动</h2>
+<p>前面说过，安装<code class="language-plaintext highlighter-rouge">mysql-server-8.0</code>不需要配置，其实是apt不讲wood，来骗，来偷袭。不仅要配置，还要配置好几个地方。</p>
+<h3 id="21-启动">2.1 启动</h3>
+<p>先说启动，配置主要是用户密码之类的。<br />
+一般来说，启动分两大类，一类是直接运行可执行文件，比如<code class="language-plaintext highlighter-rouge">&gt; mysqld</code>或者<code class="language-plaintext highlighter-rouge">&gt; mysqld_safe</code>。</p>
+<blockquote>
+  <p><code class="language-plaintext highlighter-rouge">mysqld_safe</code>会在服务端挂了的时候拉起来</p>
+</blockquote>
+
+<p>在百度上搜相关内容的话多半是会看到这句话的，我也没试过，就当它是对的(逃<br />
+第二类就是用<code class="language-plaintext highlighter-rouge">systemd</code>或者<code class="language-plaintext highlighter-rouge">service</code>之类的工具了，还能配置开机自启，稍微方便点。<br />
+实际上，<code class="language-plaintext highlighter-rouge">systemd</code>在WSL2上是用不了的。</p>
+<blockquote>
+  <p><img src="/assets/img/2021-05-02-how-to-install-and-configure-mysql/2.png" alt="img" />
+WSL2：我不要你觉得，我要我觉得</p>
+</blockquote>
+
+<p>原因是：WSL2虽然是虚拟机，但是它并没有PID1的进程，PID1其实是Windows系统内核<br />
+在WSL2，如果不用<code class="language-plaintext highlighter-rouge">mysqld_safe</code>的话，<code class="language-plaintext highlighter-rouge">service mysql start</code>就是你最好的选择。<br />
+<em>其实这里也有个坑，但是先按下不表，因为暂时还遇不到这个破坑</em></p>
+
+<hr />
+<p>安装完成过后就该运行一下了。MySQL分两个部分，server和client，<code class="language-plaintext highlighter-rouge">mysqld</code>其实就是启动mysql服务端的。查看MySQL Server有没有正常启动的方法通常是<code class="language-plaintext highlighter-rouge">&gt; mysqld status</code></p>
+
+<p><img src="/assets/img/2021-05-02-how-to-install-and-configure-mysql/3.png" alt="img" /></p>
+
+<p>emmmmm……启动失败<br />
+眼尖的人一眼应该就能看出来哪儿有问题：</p>
+<blockquote>
+  <p><code class="language-plaintext highlighter-rouge">[ERROR] [MY-013276] [Server] Failed to set datadir to '/var/lib/mysql/' (OS errno: 13 - Permission denied)</code></p>
+</blockquote>
+
+<p>白纸黑字的<code class="language-plaintext highlighter-rouge">Permission denied</code>，<code class="language-plaintext highlighter-rouge">/var/lib/mysql/</code>的权限有问题。</p>
+
+<p><img src="../assets/img/2021-05-02-how-to-install-and-configure-mysql/5.png" alt="img" /></p>
+
+<p>确实有问题，说明得用mysql账户来运行。</p>
+
+<p><img src="../assets/img/2021-05-02-how-to-install-and-configure-mysql/6.png" alt="img" /></p>
+
+<p>但是实际上mysql账户是禁用的，最佳方案也不是<code class="language-plaintext highlighter-rouge">su mysql &amp;&amp; mysqld</code>，而是<code class="language-plaintext highlighter-rouge">service mysql start</code>。</p>
+
+<p><img src="../assets/img/2021-05-02-how-to-install-and-configure-mysql/7.png" alt="img" /></p>
+
+<p>喵喵喵？密码是smjb？<br />
+这时候就会有聪明人想到<code class="language-plaintext highlighter-rouge">sudo passwd mysql</code>了：</p>
+
+<p><img src="../assets/img/2021-05-02-how-to-install-and-configure-mysql/8.png" alt="img" /></p>
+
+<p>啪的一下。很快啊！一个错误就拍脸上了。其实原因很简单，还记得这个么：</p>
+
+<p><img src="../assets/img/2021-05-02-how-to-install-and-configure-mysql/6.png" alt="img" /></p>
+
+<p>mysql账户是禁用的，而直接<code class="language-plaintext highlighter-rouge">service mysql start</code>需要su到mysql账户上运行。<br />
+解决方案很简单，<code class="language-plaintext highlighter-rouge">sudo service mysql start</code>即可。<br />
+<img src="../assets/img/2021-05-02-how-to-install-and-configure-mysql/11.png" alt="img" /></p>
+
+<p>启动成功。<br />
+如果启动失败，请看<a href="#5.1">这里</a></p>
+
+<h2 id="22-配置">2.2 配置</h2>
+<p><img src="../assets/img/2021-05-02-how-to-install-and-configure-mysql/12.png" alt="img" /></p>
+
+<p><em>稍微说一下，如果密码错了也是提示Access denied，如果正常使用的时候遇到这个问题请优先考虑密码有没有输错。如果忘了密码，也可以按照下面的步骤重设</em><br />
+众所周知，账户都是有密码的。MySQL帮我们的root账户创建了一个密码，按道理来说是能在某个log里面找到的，可惜我没找到。直接改密码就行。改密码可以用<code class="language-plaintext highlighter-rouge">mysqladmin</code>来改，但是需要登录……咱不知道密码。</p>
+
+<p>MySQL允许不使用密码登录，但是这样安全性会很低，同时不能进行部分操作，但是忘了密码可以用这个方法来修改。</p>
+
+<p>首先找到配置文件，随便用个啥编辑工具打开，这里我用的vim：<br />
+<code class="language-plaintext highlighter-rouge">sudo vim /etc/mysql/mysql.conf.d/mysqld.cnf</code><br />
+找到第24行附近，添加<code class="language-plaintext highlighter-rouge">skip-grant-tables</code>：</p>
+
+<p><img src="../assets/img/2021-05-02-how-to-install-and-configure-mysql/13.png" alt="img" /></p>
+
+<p>其实也不一定要在24行附近，只要在<code class="language-plaintext highlighter-rouge">[mysqld]</code>下均可。
+修改完成后保存退出，重启mysqld服务，就能无密码登录了: <code class="language-plaintext highlighter-rouge">sudo service mysql restart &amp;&amp; mysql -u root</code></p>
+
+<p><img src="../assets/img/2021-05-02-how-to-install-and-configure-mysql/14.png" alt="img" /></p>
+
+<p><em>小声bb一句，百度上的教程对mysql-cli的参数用法有很多说法，有的说-u和-p后不能带空格，有的说可以，实测下来两种都可以。</em></p>
+
+<p>MySQL对用户密码的修改也可以针对mysql.user表进行修改，当然并不是直接修改。<br />
+这里可以说是滔天巨坑，因为百度上大部分教程都已经过时，有着大量的教程告诉你修改密码用</p>
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">update</span> <span class="k">user</span> <span class="k">set</span> <span class="n">authentication_string</span><span class="o">=</span><span class="n">password</span><span class="p">(</span><span class="nv">"password-you-want-to-set"</span><span class="p">)</span> <span class="k">where</span> <span class="k">user</span><span class="o">=</span><span class="nv">"root"</span><span class="p">;</span>
+</code></pre></div></div>
+<p>来设置密码。</p>
+
+<p><img src="../assets/img/2021-05-02-how-to-install-and-configure-mysql/15.png" alt="img" /></p>
+
+<blockquote>
+  <p>MySQL: 我不要你觉得，我要我觉得。大人，食大便辣！</p>
+</blockquote>
+
+<p>报错很明确，<code class="language-plaintext highlighter-rouge">password()</code>在8.0已经弃用了，现在应该用最新的方法来修改密码。<br />
+先用<code class="language-plaintext highlighter-rouge">flush privileges;</code>刷新数据库，然后使用</p>
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">alter</span> <span class="k">user</span> <span class="s1">'root'</span><span class="o">@</span><span class="s1">'localhost'</span> <span class="n">identified</span> <span class="k">with</span> <span class="n">caching_sha2_password</span> <span class="k">by</span> <span class="s1">'password-you-want-to-set'</span><span class="p">;</span>
+</code></pre></div></div>
+<p>来修改密码。</p>
+
+<p>接下来详解一下这段指令的含义<br />
+<code class="language-plaintext highlighter-rouge">'root'@'localhost'</code>，这里其实是匹配的mysql.user表里的<code class="language-plaintext highlighter-rouge">user</code>和<code class="language-plaintext highlighter-rouge">host</code>项，用<code class="language-plaintext highlighter-rouge">select user,host,plugin,authentication_string from mysql.user;</code>可以查看。<br />
+<code class="language-plaintext highlighter-rouge">user</code>不用多说，登录用的用户名<br />
+<code class="language-plaintext highlighter-rouge">host</code>是作用域，localhost说明只能在本地进行登录；如果想匹配任意地址，可以用通配符’%’<br />
+<code class="language-plaintext highlighter-rouge">caching_sha2_password</code>就是<code class="language-plaintext highlighter-rouge">plugin</code>项，用于标识密码的加密算法的，一般都用<code class="language-plaintext highlighter-rouge">caching_sha2_password</code><br />
+<code class="language-plaintext highlighter-rouge">'password-you-want-to-set'</code>，密码，不必多说<br />
+密码在<code class="language-plaintext highlighter-rouge">mysql.user</code>中是<code class="language-plaintext highlighter-rouge">authentication_string</code>项，且被加密过。</p>
+
+<p>密码修改完后，用<code class="language-plaintext highlighter-rouge">flush privileges;</code>再刷新一次数据库，然后就能退出了。</p>
+
+<p>接下来再次修改<code class="language-plaintext highlighter-rouge">/etc/mysql/mysql.conf.d/mysqld.cnf</code>，将<code class="language-plaintext highlighter-rouge">skip-grant-tables</code>删除或注释掉，重启服务后就能用密码登录了。</p>
+
+<p><img src="/assets/img/2021-05-02-how-to-install-and-configure-mysql/16.png" alt="img" /></p>
+
+<h1 id="3-添加用户">3 添加用户</h1>
+<p>添加用户的指令:</p>
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">create</span> <span class="k">user</span> <span class="s1">'user-name'</span><span class="o">@</span><span class="s1">'%'</span> <span class="n">identified</span> <span class="k">by</span> <span class="s1">'password-you-want-to-set'</span><span class="p">;</span>
+</code></pre></div></div>
+<p><code class="language-plaintext highlighter-rouge">'user-name'@'%'</code>和<code class="language-plaintext highlighter-rouge">'password-you-want-to-set'</code>含义同上。</p>
+
+<p>添加了用户还需要分配相应的权限，这里给一个设置权限的模板:</p>
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">grant</span> <span class="k">privileges</span> <span class="k">on</span> <span class="n">databasename</span><span class="p">.</span><span class="n">tablename</span> <span class="k">to</span> <span class="s1">'user-name'</span><span class="o">@</span><span class="s1">'host'</span> <span class="k">with</span> <span class="k">grant</span> <span class="k">option</span><span class="p">;</span>
+</code></pre></div></div>
+<p>注意：设定权限需要数据库管理员的权限。<br />
+<code class="language-plaintext highlighter-rouge">privileges</code>是指的操作权限，比如select，insert之类的。all自然就是全部操作权限。<br />
+<code class="language-plaintext highlighter-rouge">databasename.tablename</code>指的是前面的操作权限作用于哪些数据库的哪些表，可以用通配符<code class="language-plaintext highlighter-rouge">*</code>表示所有，比如<code class="language-plaintext highlighter-rouge">*.*</code>表示所有数据库的所有表。<br />
+<code class="language-plaintext highlighter-rouge">with grant option</code>说明这个用户可以给其它用户分配权限，如果不是分配管理员账户的话一般不会用这个。</p>
+
+<p>偷懒的话可以用下面这个:</p>
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">grant</span> <span class="k">all</span> <span class="k">on</span> <span class="o">*</span><span class="p">.</span><span class="o">*</span> <span class="k">to</span> <span class="s1">'user-name'</span><span class="o">@</span><span class="s1">'%'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<h1 id="4-通过navicat连接wsl2中的mysql">4 通过Navicat连接WSL2中的MySQL</h1>
+<p>这一步可以适用于大部分远程连接MySQL数据库的需求。</p>
+
+<p>首先找到<code class="language-plaintext highlighter-rouge">/etc/mysql/mysql.conf.d/mysqld.cnf</code>中的<code class="language-plaintext highlighter-rouge">bind-address</code>项，将其注释掉或设置为0.0.0.0<br />
+<code class="language-plaintext highlighter-rouge">mysqlx-bind-address</code>应该是不用设置的<br />
+<img src="/assets/img/2021-05-02-how-to-install-and-configure-mysql/17.png" alt="img" /></p>
+
+<p>保存退出后重启mysql服务即可。</p>
+
+<p>WSL2与WSL1不同，前者其实就是一个虚拟机。在bash运行<code class="language-plaintext highlighter-rouge">ifconfig</code>，找到WSL2的ip地址(inet项):</p>
+
+<p><img src="/assets/img/2021-05-02-how-to-install-and-configure-mysql/18.png" alt="img" /></p>
+
+<p>在Navicat中新建一个连接，主机一栏填写WSL2的ip地址。<br />
+注意：需要连接的用户需要匹配host，不知道ip是多少可以设置为<code class="language-plaintext highlighter-rouge">%</code>。</p>
+
+<h1 id="5-问题汇总">5 问题汇总</h1>
+<h2 id="51-启动mysqld失败">5.1 <a name="5.1">启动mysqld失败</a></h2>
+<p><img src="../assets/img/2021-05-02-how-to-install-and-configure-mysql/9.png" alt="img" /></p>
+
+<p>这里我就不长篇大论了，简单来说就是翻<code class="language-plaintext highlighter-rouge">/var/log/mysql/error.log</code>发现了一个错误日志:</p>
+<blockquote>
+  <p><code class="language-plaintext highlighter-rouge">[ERROR] [MY-011300] [Server] Plugin mysqlx reported: 'Setup of socket: '/var/run/mysqld/mysqlx.sock' failed, can't create lock file /var/run/mysqld/mysqlx.sock.lock'</code></p>
+</blockquote>
+
+<p><img src="../assets/img/2021-05-02-how-to-install-and-configure-mysql/4.png" alt="img" /></p>
+
+<p><code class="language-plaintext highlighter-rouge">/var/run/mysqld</code>目录下面有文件创建失败，创建失败要么是没目录要么是没权限，</p>
+
+<p><img src="../assets/img/2021-05-02-how-to-install-and-configure-mysql/10.png" alt="img" /></p>
+
+<p>注意所有者是root，也就是说mysql没法在这个目录下面创建文件。直接chown修改拥有者即可：<code class="language-plaintext highlighter-rouge">sudo chown mysql /var/run/mysqld</code></p>
+
+<p><em>稍微说明一下，写文章的时候第三次尝试复现这个问题的时候没成功，看了一下权限发现是mysql:root，说明不需要修改用户组，保持root就行了。</em></p>
+
+    </article>
+
+    
+    <div class="social-share-wrapper">
+      <div class="social-share"></div>
+    </div>
+    
+  </div>
+
+  <section class="author-detail">
+    <section class="post-footer-item author-card">
+      <div class="avatar">
+        <img src="/assets/img/profile.png" alt="">
+      </div>
+      <div class="author-name" rel="author">qzwxsaedc</div>
+      <div class="bio">
+        <p><s>你以为这里有描述，其实并没有</s></p>
+      </div>
+      
+      <ul class="sns-links">
+        
+        <li>
+          <a href="//github.com/Skeleton321" target="_blank">
+                    <i class="iconfont icon-github"></i>
+                </a>
+        </li>
+        
+      </ul>
+      
+    </section>
+    <section class="post-footer-item read-next">
+      
+
+      
+      <div class="read-next-item">
+        <a href="/others/my-first-blog.html" class="read-next-link"></a>
+          <section>
+            <span>第一篇博客</span>
+            <p>我几年前就有建一个个人博客的计划，但是受限于各种问题(懒，国内域名备案，不知道写啥)就一直没弄。</p>
+          </section>
+          
+      </div>
+      
+    </section>
+    
+  </section>
+
+  <footer class="g-footer">
+  <section>qzwxsaedc的个人博客 ©
+  
+  
+  2021
+  </section>
+  <section>Powered by <a href="//jekyllrb.com">Jekyll</a> | <a href="https://github.com/kaeyleo/jekyll-theme-H2O">Theme H2O</a></section>
+</footer>
+
+
+  <script src="/assets/js/social-share.min.js"></script>
+  <script>
+    socialShare('.social-share', {
+      sites: [
+        
+      ],
+      wechatQrcodeTitle: "分享到微信朋友圈",
+      wechatQrcodeHelper: '<p>扫码后点击右上角</p><p>将本文分享至朋友圈</p>'
+    });
+  </script>
+
+  
+
+  <script src="/assets/js/prism.js"></script>
+  <script src="/assets/js/index.min.js"></script>
+</body>
+
+</html>

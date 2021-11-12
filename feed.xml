@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2021-11-12T08:11:36+00:00</updated><id>/feed.xml</id><title type="html">qzwxsaedc的个人博客</title><subtitle>这个人懒得要死，所以冇描述。</subtitle><author><name>qzwxsaedc</name></author><entry><title type="html">在WSL2-Ubuntu20.04上配置MySQL踩的坑与解决方案</title><link href="/program/how-to-install-and-configure-mysql.html" rel="alternate" type="text/html" title="在WSL2-Ubuntu20.04上配置MySQL踩的坑与解决方案" /><published>2021-05-02T00:00:00+00:00</published><updated>2021-05-02T00:00:00+00:00</updated><id>/program/how-to-install-and-configure-mysql</id><content type="html" xml:base="/program/how-to-install-and-configure-mysql.html">&lt;p&gt;&lt;em&gt;&lt;del&gt;摸了两个月终于写了第三篇文章XD&lt;/del&gt;&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;这几天写了个项目用到了MySQL，最开始图方便装的windows版。方便是方便，装完了就能直接用。后来想着干脆把这玩意儿丢到wsl2里面，方便调试(主要是要把Django放wsl2里面)。然后……然后tm折腾了一晚上。&lt;/p&gt;
+&lt;h2 id=&quot;1-安装&quot;&gt;1 安装&lt;/h2&gt;
+&lt;p&gt;安装很简单，Ubuntu下面&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sudo apt install mysql-server-8.0&lt;/code&gt;就行了。&lt;br /&gt;
+然后这里就有第一个坑……用&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sudo apt search ^mysql-server&lt;/code&gt;搜索的话你就会看到其实有三个包：
+&lt;img src=&quot;/assets/img/2021-05-02-how-to-install-and-configure-mysql/1.png&quot; alt=&quot;img&quot; /&gt;
+看描述可以看出来，第一个和第二个包内容是相同的，第三个包和前两个包相比少了mysql-client的部分；第二个包和第一个包最大的区别就是&lt;strong&gt;System database setup&lt;/strong&gt;这句话。也就是说用&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sudo apt install mysql-server-8.0&lt;/code&gt;来装的话，会少一些配置过程。&lt;br /&gt;
+为什么说有坑呢，你上百度搜linux安装mysql，不敢说80%，至少90%的文章(反正大家互相抄，说99%也没啥问题)都说 &lt;em&gt;安装过程中需要输入密码&lt;/em&gt; ，但是实际上8.0没这一步……后面出问题时搞得我一度以为哪儿出问题了。当然这只是个小坑。&lt;/p&gt;
+&lt;h2 id=&quot;2-配置启动&quot;&gt;2 配置&amp;amp;启动&lt;/h2&gt;
+&lt;p&gt;前面说过，安装&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mysql-server-8.0&lt;/code&gt;不需要配置，其实是apt不讲wood，来骗，来偷袭。不仅要配置，还要配置好几个地方。&lt;/p&gt;
+&lt;h3 id=&quot;21-启动&quot;&gt;2.1 启动&lt;/h3&gt;
+&lt;p&gt;先说启动，配置主要是用户密码之类的。&lt;br /&gt;
+一般来说，启动分两大类，一类是直接运行可执行文件，比如&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&amp;gt; mysqld&lt;/code&gt;或者&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&amp;gt; mysqld_safe&lt;/code&gt;。&lt;/p&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mysqld_safe&lt;/code&gt;会在服务端挂了的时候拉起来&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;在百度上搜相关内容的话多半是会看到这句话的，我也没试过，就当它是对的(逃&lt;br /&gt;
+第二类就是用&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;systemd&lt;/code&gt;或者&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;service&lt;/code&gt;之类的工具了，还能配置开机自启，稍微方便点。&lt;br /&gt;
+实际上，&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;systemd&lt;/code&gt;在WSL2上是用不了的。&lt;/p&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;&lt;img src=&quot;/assets/img/2021-05-02-how-to-install-and-configure-mysql/2.png&quot; alt=&quot;img&quot; /&gt;
+WSL2：我不要你觉得，我要我觉得&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;原因是：WSL2虽然是虚拟机，但是它并没有PID1的进程，PID1其实是Windows系统内核&lt;br /&gt;
+在WSL2，如果不用&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mysqld_safe&lt;/code&gt;的话，&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;service mysql start&lt;/code&gt;就是你最好的选择。&lt;br /&gt;
+&lt;em&gt;其实这里也有个坑，但是先按下不表，因为暂时还遇不到这个破坑&lt;/em&gt;&lt;/p&gt;
+
+&lt;hr /&gt;
+&lt;p&gt;安装完成过后就该运行一下了。MySQL分两个部分，server和client，&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mysqld&lt;/code&gt;其实就是启动mysql服务端的。查看MySQL Server有没有正常启动的方法通常是&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&amp;gt; mysqld status&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/img/2021-05-02-how-to-install-and-configure-mysql/3.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;emmmmm……启动失败&lt;br /&gt;
+眼尖的人一眼应该就能看出来哪儿有问题：&lt;/p&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;[ERROR] [MY-013276] [Server] Failed to set datadir to '/var/lib/mysql/' (OS errno: 13 - Permission denied)&lt;/code&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;白纸黑字的&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Permission denied&lt;/code&gt;，&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/var/lib/mysql/&lt;/code&gt;的权限有问题。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;../assets/img/2021-05-02-how-to-install-and-configure-mysql/5.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;确实有问题，说明得用mysql账户来运行。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;../assets/img/2021-05-02-how-to-install-and-configure-mysql/6.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;但是实际上mysql账户是禁用的，最佳方案也不是&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;su mysql &amp;amp;&amp;amp; mysqld&lt;/code&gt;，而是&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;service mysql start&lt;/code&gt;。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;../assets/img/2021-05-02-how-to-install-and-configure-mysql/7.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;喵喵喵？密码是smjb？&lt;br /&gt;
+这时候就会有聪明人想到&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sudo passwd mysql&lt;/code&gt;了：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;../assets/img/2021-05-02-how-to-install-and-configure-mysql/8.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;啪的一下。很快啊！一个错误就拍脸上了。其实原因很简单，还记得这个么：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;../assets/img/2021-05-02-how-to-install-and-configure-mysql/6.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;mysql账户是禁用的，而直接&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;service mysql start&lt;/code&gt;需要su到mysql账户上运行。&lt;br /&gt;
+解决方案很简单，&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sudo service mysql start&lt;/code&gt;即可。&lt;br /&gt;
+&lt;img src=&quot;../assets/img/2021-05-02-how-to-install-and-configure-mysql/11.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;启动成功。&lt;br /&gt;
+如果启动失败，请看&lt;a href=&quot;#5.1&quot;&gt;这里&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;22-配置&quot;&gt;2.2 配置&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&quot;../assets/img/2021-05-02-how-to-install-and-configure-mysql/12.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;稍微说一下，如果密码错了也是提示Access denied，如果正常使用的时候遇到这个问题请优先考虑密码有没有输错。如果忘了密码，也可以按照下面的步骤重设&lt;/em&gt;&lt;br /&gt;
+众所周知，账户都是有密码的。MySQL帮我们的root账户创建了一个密码，按道理来说是能在某个log里面找到的，可惜我没找到。直接改密码就行。改密码可以用&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mysqladmin&lt;/code&gt;来改，但是需要登录……咱不知道密码。&lt;/p&gt;
+
+&lt;p&gt;MySQL允许不使用密码登录，但是这样安全性会很低，同时不能进行部分操作，但是忘了密码可以用这个方法来修改。&lt;/p&gt;
+
+&lt;p&gt;首先找到配置文件，随便用个啥编辑工具打开，这里我用的vim：&lt;br /&gt;
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sudo vim /etc/mysql/mysql.conf.d/mysqld.cnf&lt;/code&gt;&lt;br /&gt;
+找到第24行附近，添加&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;skip-grant-tables&lt;/code&gt;：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;../assets/img/2021-05-02-how-to-install-and-configure-mysql/13.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;其实也不一定要在24行附近，只要在&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;[mysqld]&lt;/code&gt;下均可。
+修改完成后保存退出，重启mysqld服务，就能无密码登录了: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sudo service mysql restart &amp;amp;&amp;amp; mysql -u root&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;../assets/img/2021-05-02-how-to-install-and-configure-mysql/14.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;小声bb一句，百度上的教程对mysql-cli的参数用法有很多说法，有的说-u和-p后不能带空格，有的说可以，实测下来两种都可以。&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;MySQL对用户密码的修改也可以针对mysql.user表进行修改，当然并不是直接修改。&lt;br /&gt;
+这里可以说是滔天巨坑，因为百度上大部分教程都已经过时，有着大量的教程告诉你修改密码用&lt;/p&gt;
+&lt;div class=&quot;language-sql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;update&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;user&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;set&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;authentication_string&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;password-you-want-to-set&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;where&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;root&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;来设置密码。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;../assets/img/2021-05-02-how-to-install-and-configure-mysql/15.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;MySQL: 我不要你觉得，我要我觉得。大人，食大便辣！&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;报错很明确，&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;password()&lt;/code&gt;在8.0已经弃用了，现在应该用最新的方法来修改密码。&lt;br /&gt;
+先用&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;flush privileges;&lt;/code&gt;刷新数据库，然后使用&lt;/p&gt;
+&lt;div class=&quot;language-sql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;alter&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;user&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'root'&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'localhost'&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;identified&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;caching_sha2_password&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;by&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'password-you-want-to-set'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;来修改密码。&lt;/p&gt;
+
+&lt;p&gt;接下来详解一下这段指令的含义&lt;br /&gt;
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;'root'@'localhost'&lt;/code&gt;，这里其实是匹配的mysql.user表里的&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;user&lt;/code&gt;和&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;host&lt;/code&gt;项，用&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;select user,host,plugin,authentication_string from mysql.user;&lt;/code&gt;可以查看。&lt;br /&gt;
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;user&lt;/code&gt;不用多说，登录用的用户名&lt;br /&gt;
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;host&lt;/code&gt;是作用域，localhost说明只能在本地进行登录；如果想匹配任意地址，可以用通配符’%’&lt;br /&gt;
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;caching_sha2_password&lt;/code&gt;就是&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;plugin&lt;/code&gt;项，用于标识密码的加密算法的，一般都用&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;caching_sha2_password&lt;/code&gt;&lt;br /&gt;
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;'password-you-want-to-set'&lt;/code&gt;，密码，不必多说&lt;br /&gt;
+密码在&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mysql.user&lt;/code&gt;中是&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;authentication_string&lt;/code&gt;项，且被加密过。&lt;/p&gt;
+
+&lt;p&gt;密码修改完后，用&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;flush privileges;&lt;/code&gt;再刷新一次数据库，然后就能退出了。&lt;/p&gt;
+
+&lt;p&gt;接下来再次修改&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/mysql/mysql.conf.d/mysqld.cnf&lt;/code&gt;，将&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;skip-grant-tables&lt;/code&gt;删除或注释掉，重启服务后就能用密码登录了。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/img/2021-05-02-how-to-install-and-configure-mysql/16.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;h1 id=&quot;3-添加用户&quot;&gt;3 添加用户&lt;/h1&gt;
+&lt;p&gt;添加用户的指令:&lt;/p&gt;
+&lt;div class=&quot;language-sql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;create&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;user&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'user-name'&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'%'&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;identified&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;by&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'password-you-want-to-set'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;'user-name'@'%'&lt;/code&gt;和&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;'password-you-want-to-set'&lt;/code&gt;含义同上。&lt;/p&gt;
+
+&lt;p&gt;添加了用户还需要分配相应的权限，这里给一个设置权限的模板:&lt;/p&gt;
+&lt;div class=&quot;language-sql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;grant&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;privileges&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;on&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;databasename&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tablename&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;to&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'user-name'&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'host'&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;grant&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;option&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;注意：设定权限需要数据库管理员的权限。&lt;br /&gt;
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;privileges&lt;/code&gt;是指的操作权限，比如select，insert之类的。all自然就是全部操作权限。&lt;br /&gt;
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;databasename.tablename&lt;/code&gt;指的是前面的操作权限作用于哪些数据库的哪些表，可以用通配符&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;*&lt;/code&gt;表示所有，比如&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;*.*&lt;/code&gt;表示所有数据库的所有表。&lt;br /&gt;
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;with grant option&lt;/code&gt;说明这个用户可以给其它用户分配权限，如果不是分配管理员账户的话一般不会用这个。&lt;/p&gt;
+
+&lt;p&gt;偷懒的话可以用下面这个:&lt;/p&gt;
+&lt;div class=&quot;language-sql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;grant&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;all&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;on&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;to&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'user-name'&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'%'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h1 id=&quot;4-通过navicat连接wsl2中的mysql&quot;&gt;4 通过Navicat连接WSL2中的MySQL&lt;/h1&gt;
+&lt;p&gt;这一步可以适用于大部分远程连接MySQL数据库的需求。&lt;/p&gt;
+
+&lt;p&gt;首先找到&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/etc/mysql/mysql.conf.d/mysqld.cnf&lt;/code&gt;中的&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bind-address&lt;/code&gt;项，将其注释掉或设置为0.0.0.0&lt;br /&gt;
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mysqlx-bind-address&lt;/code&gt;应该是不用设置的&lt;br /&gt;
+&lt;img src=&quot;/assets/img/2021-05-02-how-to-install-and-configure-mysql/17.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;保存退出后重启mysql服务即可。&lt;/p&gt;
+
+&lt;p&gt;WSL2与WSL1不同，前者其实就是一个虚拟机。在bash运行&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ifconfig&lt;/code&gt;，找到WSL2的ip地址(inet项):&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/img/2021-05-02-how-to-install-and-configure-mysql/18.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;在Navicat中新建一个连接，主机一栏填写WSL2的ip地址。&lt;br /&gt;
+注意：需要连接的用户需要匹配host，不知道ip是多少可以设置为&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;%&lt;/code&gt;。&lt;/p&gt;
+
+&lt;h1 id=&quot;5-问题汇总&quot;&gt;5 问题汇总&lt;/h1&gt;
+&lt;h2 id=&quot;51-启动mysqld失败&quot;&gt;5.1 &lt;a name=&quot;5.1&quot;&gt;启动mysqld失败&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&quot;../assets/img/2021-05-02-how-to-install-and-configure-mysql/9.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;这里我就不长篇大论了，简单来说就是翻&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/var/log/mysql/error.log&lt;/code&gt;发现了一个错误日志:&lt;/p&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;[ERROR] [MY-011300] [Server] Plugin mysqlx reported: 'Setup of socket: '/var/run/mysqld/mysqlx.sock' failed, can't create lock file /var/run/mysqld/mysqlx.sock.lock'&lt;/code&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;&lt;img src=&quot;../assets/img/2021-05-02-how-to-install-and-configure-mysql/4.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/var/run/mysqld&lt;/code&gt;目录下面有文件创建失败，创建失败要么是没目录要么是没权限，&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;../assets/img/2021-05-02-how-to-install-and-configure-mysql/10.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;注意所有者是root，也就是说mysql没法在这个目录下面创建文件。直接chown修改拥有者即可：&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sudo chown mysql /var/run/mysqld&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;稍微说明一下，写文章的时候第三次尝试复现这个问题的时候没成功，看了一下权限发现是mysql:root，说明不需要修改用户组，保持root就行了。&lt;/em&gt;&lt;/p&gt;</content><author><name>qzwxsaedc</name></author><category term="Program" /><category term="MySQL-8.0.23" /><category term="Linux" /><summary type="html">摸了两个月终于写了第三篇文章XD</summary></entry><entry><title type="html">第一篇博客</title><link href="/others/my-first-blog.html" rel="alternate" type="text/html" title="第一篇博客" /><published>2021-02-24T00:00:00+00:00</published><updated>2021-02-24T00:00:00+00:00</updated><id>/others/my-first-blog</id><content type="html" xml:base="/others/my-first-blog.html">&lt;p&gt;我几年前就有建一个个人博客的计划，但是受限于各种问题(懒，国内域名备案，不知道写啥)就一直没弄。&lt;/p&gt;
+
+&lt;p&gt;至于为啥还是搭了一个博客，原因之一还是闲得蛋疼，还为了记录各种各样的内容。比如有些工具费半天劲终于配置完成了，结果放了几个月没弄过又tm忘了……&lt;/p&gt;
+
+&lt;p&gt;这个博客暂定是挂在GitHub Pages上面，使用了&lt;a href=&quot;https://jekyllrb.com/&quot;&gt;Jekyll&lt;/a&gt;，主题使用的是&lt;a href=&quot;https://github.com/kaeyleo/jekyll-theme-H2O&quot;&gt;jekyll-theme-H2O&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;暂时就写这么多吧。&lt;/p&gt;</content><author><name>qzwxsaedc</name></author><category term="Others" /><category term="日记" /><summary type="html">我几年前就有建一个个人博客的计划，但是受限于各种问题(懒，国内域名备案，不知道写啥)就一直没弄。</summary></entry><entry><title type="html">利用GitHub Action将Jekyll部署在GitHub Pages上</title><link href="/program/build-jekyll-by-github-action.html" rel="alternate" type="text/html" title="利用GitHub Action将Jekyll部署在GitHub Pages上" /><published>2021-02-24T00:00:00+00:00</published><updated>2021-02-24T00:00:00+00:00</updated><id>/program/build-jekyll-by-github-action</id><content type="html" xml:base="/program/build-jekyll-by-github-action.html">&lt;p&gt;&lt;em&gt;&lt;a href=&quot;#start&quot;&gt;直接前往正文&lt;/a&gt;&lt;/em&gt;&lt;br /&gt;
+博客写好了，就该挂在网站上了。最经济实惠的应该就是直接把网页挂在GitHub Pages上了。既然都上GitHub Pages了，不如直接用GitHub Action来实现自动化网站部署。&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;然后GitHub Action我折腾了一下午……&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;先说明一下，如果不需要GitHub Action的话，整个操作就非常简单:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;用&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;jekyll build&lt;/code&gt;编译网页&lt;/li&gt;
+  &lt;li&gt;把&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;./_site&lt;/code&gt;目录下的所有文件和文件夹上传到服务器或 GitHub/Gitee(如果要用GitHub Pages或Gitee Pages的话)。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;或者更偷懒一点:
+  直接在服务器上面运行&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;jekyll serve&lt;/code&gt;。这是Jekyll内置的一个调试用服务器。&lt;/p&gt;
+
+&lt;p&gt;作为懒人加穷学生，把博客挂在GitHub Pages上面自然是最好的选择，但是手动编译再部署就很烦。正好GitHub Action免费，直接拿GitHub Action自动部署就完事了。&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Jekyll的安装、网站项目的创建和GitHub Pages的创建就不再赘述，直接进入主题。&lt;/p&gt;
+
+&lt;p&gt;GitHub Action的自动化部署有两个思路，一是把项目和网站放在同一个仓库的不同分支里面，二是把项目和网站放在不同的仓库里面。第二种方案其实蛮麻烦的，这个在后面细说。&lt;/p&gt;
+
+&lt;p&gt;先稍微讲一下GitHub Action。这玩意儿可玩性蛮高的，而且服务器配置挺高，比国内阿某云某讯云啥的大方多了。GitHub Action是一类CI\CD工具，配置好了可以体验编译打包发布一条龙服务。具体怎么配置就不展开细讲了(其实就是我自己都没完全玩明白)，百度一搜一大堆，或者自己去看GitHub Action的官方文档也行。GitHub Action和其他CI工具比起来更大的一个优点是，GitHub本身就是一个代码共享的一个平台，也就是说，你可以直接用别人写好的东西，而不需要自己过多的去操心。&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;正文从这里开始&quot;&gt;&lt;a name=&quot;start&quot;&gt;正文从这里开始&lt;/a&gt;&lt;/h2&gt;
+
+&lt;h5 id=&quot;没错上面都是废话&quot;&gt;&lt;s&gt;没错，上面都是废话&lt;/s&gt;&lt;/h5&gt;
+
+&lt;p&gt;首先将网站项目push到GitHub Pages的仓库中。&lt;strong&gt;据说&lt;/strong&gt;GitHub Pages只能指定master分支，但据我观察，好像可以选定其他的分支。我选择将项目传到build分支中。接下来就会遇到第一个小坑。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/img/2021-02-24-build-jekyll-by-github-action/9900BCF8F0F30CA4.png&quot; alt=&quot;img&quot; /&gt;
+&lt;em&gt;&lt;center style=&quot;font-size:70%&quot;&gt;上面是一个标准的GitHub项目的标签栏&lt;/center&gt;&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;按百度上你能搜到的大部分步骤&lt;/strong&gt;，你只需要点上图中的Action，然后创建一个workflow就行了。就像下图这样:&lt;br /&gt;
+&lt;img src=&quot;/assets/img/2021-02-24-build-jekyll-by-github-action/097CE708D4118C6C.png&quot; alt=&quot;img&quot; /&gt;
+&lt;em&gt;&lt;center style=&quot;font-size:70%&quot;&gt;如果你的项目没啥问题的话，应该就是一样的&lt;/center&gt;&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;可以看到，GitHub其实是默认提供了一套CI模板的，这里是第二个坑，接下来会细讲。&lt;/p&gt;
+
+&lt;p&gt;点击&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Set up this workflow&lt;/code&gt;后，GitHub会自动把模板填充上，就像这样: 
+&lt;img src=&quot;/assets/img/2021-02-24-build-jekyll-by-github-action/2C982A81BCEA3CA3.png&quot; alt=&quot;img&quot; /&gt;
+&lt;em&gt;&lt;center style=&quot;font-size:70%&quot;&gt;仔细看这玩意儿到底是创建在哪个分支的&lt;/center&gt;&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;这里同时存在两个坑。上文所说的第一个坑是：这个文件其实是创建在master分支的。如果你的项目就在master分支的话，其实也没啥问题。但是如果你的项目不在master分支的话，直接创建配置文件的话，GitHub Action就没法正常运行，毕竟master分支现在啥都没有。&lt;/p&gt;
+
+&lt;p&gt;正确的操作是：在本地的项目目录中创建&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;./.github/workflows/WHATEVER_YOU_LIKE.yml&lt;/code&gt;，然后在里面写CI的配置文件。
+&lt;img src=&quot;/assets/img/2021-02-24-build-jekyll-by-github-action/0BF3EE28D3CA076D.png&quot; alt=&quot;img&quot; /&gt;
+&lt;em&gt;&lt;center style=&quot;font-size:70%&quot;&gt;目录长这样&lt;/center&gt;&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;这里就出现了第二个坑：如果你把GitHub自动创建的模板复制进去的话，也没法自动构建。原因有三。
+其一，触发器监听的是master分支，即只有当master分支有push和pr操作时才会触发构建。正确的配置是&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-yaml&quot; data-lang=&quot;yaml&quot;&gt;&lt;span class=&quot;na&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;push&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;branches&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;[&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;build&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# 这里其实可以填写多个监听的分支，也可以不使用这个参数，监听所有push操作。&lt;/span&gt;
+                        &lt;span class=&quot;c1&quot;&gt;# 因为我需要自动构建的分支是build分支，所以这里填写build分支。&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;pull_request&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;         &lt;span class=&quot;c1&quot;&gt;# 这个可以不要。&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;branches&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;[&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;build&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# 同on.push.branches。&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;其二，这里其实并没有将构建后的内容提交到仓库里面。所以需要一个提交的操作。下文细说。
+其三，这个配置文件其实是有问题的。我遇到的问题有两个，第一个是提示Gemfile.lock文件无权访问，第二个是在后续的提交操作中提示没有对应的目录(这个是我调试的时候莫名其妙出现的问题，不知道是怎么触发的)。第一个问题将&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;chmod 777 /srv/jekyll&lt;/code&gt;改成&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;chmod -R 777 srv/jekyll/&lt;/code&gt;可解。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;但是!&lt;/strong&gt;这里可以不用这么复杂。&lt;/p&gt;
+
+&lt;p&gt;首先我们来稍微复习一下GitHub Action的特点。GitHub Action最大的特点就是可以用别人写的脚本，所以我们理论上能找到别人写好的构建脚本。实际上我确实找到了一个，还解决了另外一个问题：提交。这个脚本的地址是&lt;a href=&quot;https://github.com/marketplace/actions/jekyll-actions&quot;&gt;https://github.com/marketplace/actions/jekyll-actions&lt;/a&gt;。所以我们的jobs可以这么写了:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-yaml&quot; data-lang=&quot;yaml&quot;&gt;&lt;span class=&quot;na&quot;&gt;jobs&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;build&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;runs-on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;ubuntu-latest&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# GitHub Action可以在Linux、MacOS、Windows环境下构建项目。这里使用的Linux环境。&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;steps&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;actions/checkout@v2&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;# Use GitHub Actions' cache to shorten build times and decrease load on servers&lt;/span&gt;
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;actions/cache@v2&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;path&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;vendor/bundle&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${{ runner.os }}-gems-${{ hashFiles('**/Gemfile') }}&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;restore-keys&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;|&lt;/span&gt;
+          &lt;span class=&quot;s&quot;&gt;${{ runner.os }}-gems-&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;# https://github.com/marketplace/actions/jekyll-actions&lt;/span&gt;
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;helaili/jekyll-action@v2&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${{ secrets.GITHUB_TOKEN }}&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;target_branch&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;master'&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;完整的配置文件:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-yaml&quot; data-lang=&quot;yaml&quot;&gt;&lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Jekyll Site CI&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;push&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;branches&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;[&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;build&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# 这里其实可以填写多个监听的分支，也可以不使用这个参数，监听所有push操作。&lt;/span&gt;
+                        &lt;span class=&quot;c1&quot;&gt;# 因为我需要自动构建的分支是build分支，所以这里填写build分支。&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;pull_request&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;         &lt;span class=&quot;c1&quot;&gt;# 这个可以不要。&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;branches&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;[&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;build&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# 同on.push.branches。&lt;/span&gt;
+
+&lt;span class=&quot;na&quot;&gt;jobs&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;build&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;runs-on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;ubuntu-latest&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# GitHub Action可以在Linux、MacOS、Windows环境下构建项目。这里使用的Linux环境。&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;steps&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;actions/checkout@v2&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;# Use GitHub Actions' cache to shorten build times and decrease load on servers&lt;/span&gt;
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;actions/cache@v2&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;path&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;vendor/bundle&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${{ runner.os }}-gems-${{ hashFiles('**/Gemfile') }}&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;restore-keys&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;|&lt;/span&gt;
+          &lt;span class=&quot;s&quot;&gt;${{ runner.os }}-gems-&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;# https://github.com/marketplace/actions/jekyll-actions&lt;/span&gt;
+    &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;helaili/jekyll-action@v2&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${{ secrets.GITHUB_TOKEN }}&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;target_branch&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;master'&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;push后就会自动构建，稍等一会儿，当看到commit id旁边出现绿勾时就说明任务完成了。&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h2 id=&quot;还没完全结束&quot;&gt;还没完全结束！&lt;/h2&gt;
+
+&lt;p&gt;我选择GitHub Pages还有另外一个理由：GitHub Pages可以自定义域名，Gitee Pages就不行。虽然Gitee Pages Pro可以设置，但是那玩意儿个人账户甚至买不了。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/img/2021-02-24-build-jekyll-by-github-action/9900BCF8F0F30CA4.png&quot; alt=&quot;img&quot; /&gt;
+&lt;em&gt;&lt;center style=&quot;font-size:70%&quot;&gt;没错，还是这张图&lt;/center&gt;&lt;/em&gt;
+步骤很简单。点上图中的Setting，然后往下翻到底，就能看到这个：
+&lt;img src=&quot;/assets/img/2021-02-24-build-jekyll-by-github-action/4F7B2413E33E3434.png&quot; alt=&quot;img&quot; /&gt;
+&lt;em&gt;&lt;center style=&quot;font-size:70%&quot;&gt;翻到底就能看到，一定要翻到底&lt;/center&gt;&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;我这里已经设置过了，所以url是自定义的域名。默认域名是&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&amp;lt;username&amp;gt;.github.io&lt;/code&gt;。在Custom domain栏填写你要设置的域名，然后点save，然后网站所在的分支就会创建一个CNAME文件。所以其实可以直接在本地创建一个，然后push上去。然后你就能用自己的域名了。&lt;/p&gt;
+
+&lt;p&gt;如果你要用自己的域名，你还需要把CNAME放在项目的根目录，要不然下次提交时会被移除。&lt;/p&gt;</content><author><name>qzwxsaedc</name></author><category term="Program" /><category term="Github Action" /><category term="Github Pages" /><category term="Jekyll" /><summary type="html">直接前往正文 博客写好了，就该挂在网站上了。最经济实惠的应该就是直接把网页挂在GitHub Pages上了。既然都上GitHub Pages了，不如直接用GitHub Action来实现自动化网站部署。</summary></entry></feed>
